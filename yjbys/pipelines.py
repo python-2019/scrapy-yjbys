@@ -35,7 +35,7 @@ class YjbysPipeline(object):
 
     def close_spider(self, spider):
         try:
-            self.file.closed()
+            self.file.flush()
         except Exception:
             logging.warning("\n\n======爬取完毕=====")
 
