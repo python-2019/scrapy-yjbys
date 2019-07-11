@@ -14,11 +14,12 @@ from scrapy.conf import settings
 
 class YjbysPipeline(object):
     def open_spider(self, spider):
+        self.now_timestamp = time.time()
         file_path = settings.get("FILE_PATH")
         self.file = open(file_path, 'a', newline='', encoding='utf-8')
         self.csv_writer = csv.writer(self.file)
-        # headers = ['公司', '学校', '举办时间', '地点', '详情']
-        # self.csv_writer.writerow(headers)
+        headers = ['公司', '学校', '举办时间', '地点', '详情']
+        self.csv_writer.writerow(headers)
 
     def process_item(self, item, spider):
         if '今天' in item['holding_time']:
@@ -27,15 +28,19 @@ class YjbysPipeline(object):
             item['holding_time'] = item['holding_time'].replace('明天', self.get_next_day_time())
         else:
             item['holding_time'] = self.get_year() + item['holding_time']
-        row = [item['company'], item['school'], item['holding_time'], item['addr'], item['href']]
-        self.csv_writer.writerow(row)
-        # logging.warning(row)
-        print(row)
-        return item
+        item['school'] = item['school'].replace('\n', '')
+        holding_timestamp = item['holding_time'][0:10]
+        strptime = time.strptime(holding_timestamp, "%Y-%m-%d")
+        data_time = time.mktime(strptime)
+        if data_time > self.now_timestamp:
+            row = [item['company'], item['school'], item['holding_time'], item['addr'], item['href']]
+            self.csv_writer.writerow(row)
+            print(row)
+            return item
 
     def close_spider(self, spider):
         try:
-            self.file.flush()
+            self.file.closed()
         except Exception:
             logging.warning("\n\n======爬取完毕=====")
 
